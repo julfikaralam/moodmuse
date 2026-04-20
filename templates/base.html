@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MoodMuse{% endblock %}</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --teal: #2a9d8f;
+      --teal-dark: #1f7a6e;
+      --teal-light: #e8f7f5;
+      --sand: #f4f1eb;
+      --charcoal: #264653;
+      --amber: #e9c46a;
+      --coral: #e76f51;
+      --text: #2d3748;
+      --muted: #718096;
+      --white: #ffffff;
+      --shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      background: var(--sand);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: "Lora", serif;
+      font-weight: 600;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { color: var(--teal-dark); }
+
+    .navbar {
+      background: var(--white) !important;
+      box-shadow: var(--shadow);
+      padding: 0.75rem 1.5rem;
+    }
+
+    .navbar-brand {
+      font-family: "Lora", serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--teal) !important;
+    }
+
+    .navbar-brand span { color: var(--charcoal); }
+
+    .nav-link {
+      color: var(--text) !important;
+      font-weight: 500;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.9rem !important;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background: var(--teal-light);
+      color: var(--teal) !important;
+    }
+
+    .nav-link i { margin-right: 5px; }
+
+    .btn-teal {
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: 100px;
+      padding: 0.55rem 1.6rem;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-teal:hover {
+      background: var(--teal-dark);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-teal {
+      background: transparent;
+      color: var(--teal);
+      border: 2px solid var(--teal);
+      border-radius: 100px;
+      padding: 0.55rem 1.6rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-teal:hover {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .mm-card {
+      background: var(--white);
+      border: none;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+
+    .mood-badge {
+      display: inline-block;
+      padding: 0.25rem 0.85rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .mood-happy { background: #fef9c3; color: #854d0e; }
+    .mood-sad { background: #dbeafe; color: #1e40af; }
+    .mood-neutral { background: #f1f5f9; color: #475569; }
+    .mood-angry { background: #fee2e2; color: #991b1b; }
+    .mood-surprised { background: #fce7f3; color: #9d174d; }
+    .mood-unknown { background: #f1f5f9; color: #64748b; }
+
+    .page-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      width: 100%;
+      flex: 1 0 auto;
+    }
+
+    .page-title {
+      font-size: 1.9rem;
+      color: var(--charcoal);
+      margin-bottom: 0.25rem;
+    }
+
+    .page-subtitle {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .stat-chip {
+      background: var(--teal-light);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .stat-chip .number {
+      font-family: "Lora", serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--teal);
+      line-height: 1;
+    }
+
+    .stat-chip .label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .alert {
+      border-radius: 10px;
+      border: none;
+    }
+
+    footer {
+      background: var(--charcoal);
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      padding: 1.2rem;
+      font-size: 0.85rem;
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 576px) {
+      .page-wrapper { padding: 1rem 0.75rem 3rem; }
+      .page-title { font-size: 1.5rem; }
+    }
+  </style>
+
+  {% block head %}{% endblock %}
+</head>
+{% set is_dashboard = request.endpoint == 'dashboard' %}
+<body class="{% block body_class %}{% endblock %}">
+  {% if not is_dashboard %}
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-3">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        Mood<span>Muse</span>
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-grid-1x2"></i>Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'webcam' %}active{% endif %}" href="{{ url_for('webcam') }}">
+                <i class="bi bi-camera"></i>Scan Mood
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'history' %}active{% endif %}" href="{{ url_for('history') }}">
+                <i class="bi bi-clock-history"></i>History
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'resources' %}active{% endif %}" href="{{ url_for('resources') }}">
+                <i class="bi bi-heart"></i>Support
+              </a>
+            </li>
+            <li class="nav-item ms-lg-2">
+              <span class="nav-link text-muted" style="font-size:0.8rem">
+                Hi, {{ current_user.name.split()[0] }}
+              </span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right"></i>Logout
+              </a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-teal btn-sm" href="{{ url_for('signup') }}">Get Started</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mt-3" style="max-width:1100px">
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+  {% if not is_dashboard %}
+  <footer>
+    MoodMuse &copy; 2025 &nbsp;&middot;&nbsp; Built for mental wellness
+  </footer>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}MoodMuse — Your Mental Wellness Companion{% endblock %}
+
+{% block head %}
+<style>
+  .hero {
+    background: linear-gradient(135deg, #264653 0%, #2a9d8f 100%);
+    color: #fff;
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    opacity: 0.88;
+    max-width: 540px;
+    margin: 0 auto 2rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .hero-emoji { font-size: 4rem; margin-bottom: 1rem; display: block; }
+  .feature-icon {
+    width: 52px; height: 52px;
+    background: var(--teal-light);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-emoji">🧠</span>
+  <h1>Understand how you <em style="font-style:italic;color:#e9c46a">feel</em> today.</h1>
+  <p>MoodMuse uses your webcam to detect your facial expression, track your mood over time, and suggest personalised mental wellness resources.</p>
+  <div class="d-flex gap-3 justify-content-center flex-wrap">
+    <a href="{{ url_for('signup') }}" class="btn btn-teal btn-lg px-4">
+      Get Started Free
+    </a>
+    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+      Log In
+    </a>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="page-wrapper">
+  <div class="row g-4 mt-2">
+    <div class="col-md-4">
+      <div class="mm-card h-100">
+        <div class="feature-icon">📸</div>
+        <h5>Instant Mood Scan</h5>
+        <p class="text-muted" style="font-size:0.9rem">
+          Open your webcam, take a snapshot, and get your mood detected in seconds — happy, sad, neutral, angry, or surprised.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="mm-card h-100">
+        <div class="feature-icon">📊</div>
+        <h5>Track Your Progress</h5>
+        <p class="text-muted" style="font-size:0.9rem">
+          Your mood history is saved automatically. View trends, charts, and patterns over the past week on your personal dashboard.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="mm-card h-100">
+        <div class="feature-icon">💙</div>
+        <h5>Personalised Support</h5>
+        <p class="text-muted" style="font-size:0.9rem">
+          Browse vetted psychologists and self-help resources matched to how you're feeling right now.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="mm-card mt-5 p-4">
+    <h3 class="text-center mb-4" style="color:var(--charcoal)">How it works</h3>
+    <div class="row g-3 text-center">
+      <div class="col-6 col-md-3">
+        <div class="fs-2 mb-2">1️⃣</div>
+        <strong>Sign up</strong>
+        <p class="text-muted small mt-1">Create a free account in 30 seconds.</p>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="fs-2 mb-2">2️⃣</div>
+        <strong>Scan your face</strong>
+        <p class="text-muted small mt-1">Allow webcam access and click Scan.</p>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="fs-2 mb-2">3️⃣</div>
+        <strong>See your mood</strong>
+        <p class="text-muted small mt-1">Get an instant result with your emotion.</p>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="fs-2 mb-2">4️⃣</div>
+        <strong>Get support</strong>
+        <p class="text-muted small mt-1">View tailored tips and resources.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Scan Your Mood — MoodMuse{% endblock %}
+
+{% block head %}
+<style>
+  #video-box {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 4/3;
+  }
+  #video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transform: scaleX(-1);   /* mirror the webcam — more natural */
+  }
+  #canvas { display: none; }
+
+  /* Overlay shown while scanning */
+  #scan-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(42,157,143,0.15);
+    border: 3px solid var(--teal);
+    border-radius: var(--radius);
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { to { opacity: 0.3; } }
+
+  #result-card { display: none; }
+  .mood-big-icon { font-size: 3.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="max-width:660px">
+  <h2 class="page-title">📸 Scan Your Mood</h2>
+  <p class="page-subtitle">Allow camera access, position your face in the frame, then click <strong>Scan</strong>.</p>
+
+  <!-- Camera box -->
+  <div class="mm-card mb-4">
+    <div id="video-box">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <div id="scan-overlay">🔍</div>
+    </div>
+
+    <!-- Status text -->
+    <p id="status-text" class="text-center text-muted mt-3 mb-3" style="font-size:0.9rem">
+      Starting camera…
+    </p>
+
+    <!-- Note input -->
+    <div class="mb-3">
+      <input type="text" id="note-input" class="form-control"
+             placeholder="Optional: add a note about how you feel (e.g. 'Tired after exams')"/>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+      <button id="btn-scan" class="btn btn-teal btn-lg px-4" disabled>
+        📸 Scan My Mood
+      </button>
+      <button id="btn-retry" class="btn btn-outline-teal btn-lg px-4" style="display:none">
+        🔄 Scan Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Result card (shown after scan) -->
+  <div class="mm-card text-center" id="result-card">
+    <div class="mood-big-icon" id="result-icon">😐</div>
+    <h3 id="result-mood" class="mt-2" style="color:var(--charcoal)"></h3>
+    <p id="result-desc" class="text-muted"></p>
+
+    <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-teal px-4">
+        📊 View Dashboard
+      </a>
+      <a href="{{ url_for('resources') }}" class="btn btn-outline-teal px-4">
+        💙 Get Support
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const video       = document.getElementById('video');
+const canvas      = document.getElementById('canvas');
+const btnScan     = document.getElementById('btn-scan');
+const btnRetry    = document.getElementById('btn-retry');
+const statusText  = document.getElementById('status-text');
+const scanOverlay = document.getElementById('scan-overlay');
+const resultCard  = document.getElementById('result-card');
+
+// ── Mood display data ────────────────────────────────────────
+const MOOD_META = {
+  happy:     { icon: '😊', color: '#d97706', desc: 'You look happy! Wonderful — keep spreading the joy.' },
+  sad:       { icon: '😢', color: '#2563eb', desc: 'You seem a bit sad. That\'s okay — check our support resources.' },
+  neutral:   { icon: '😐', color: '#475569', desc: 'A calm, balanced mood. A great state for focus and reflection.' },
+  angry:     { icon: '😤', color: '#dc2626', desc: 'You look tense. Try some deep breathing to reset.' },
+  surprised: { icon: '😲', color: '#7c3aed', desc: 'Something caught you off guard! Ground yourself with 5 breaths.' },
+  unknown:   { icon: '🤔', color: '#64748b', desc: 'Could not detect a clear mood. Try better lighting and face the camera directly.' },
+};
+
+// ── Start webcam ─────────────────────────────────────────────
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      statusText.textContent = 'Camera ready. Position your face and click Scan.';
+      btnScan.disabled = false;
+    };
+  } catch (err) {
+    statusText.textContent = 'Camera access denied. Please allow camera permissions and refresh.';
+    statusText.style.color = '#dc2626';
+  }
+}
+
+startCamera();
+
+// ── Capture and send to backend ──────────────────────────────
+btnScan.addEventListener('click', async () => {
+  // Draw current video frame to canvas
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  // Mirror the canvas to match the mirrored video display
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  const imageData = canvas.toDataURL('image/jpeg', 0.85);
+
+  // Show scanning state
+  btnScan.disabled = true;
+  btnScan.textContent = 'Scanning…';
+  scanOverlay.style.display = 'flex';
+  statusText.textContent = 'Analysing your expression…';
+  resultCard.style.display = 'none';
+
+  try {
+    const note = document.getElementById('note-input').value.trim();
+    const response = await fetch('/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageData, note: note }),
+    });
+    const data = await response.json();
+
+    scanOverlay.style.display = 'none';
+
+    if (data.success) {
+      showResult(data.mood, data.confidence);
+      statusText.textContent = `Mood saved! Confidence: ${data.confidence}%`;
+    } else {
+      statusText.textContent = data.error || 'Detection failed. Please try again.';
+      statusText.style.color = '#dc2626';
+    }
+  } catch (e) {
+    scanOverlay.style.display = 'none';
+    statusText.textContent = 'Network error. Make sure the server is running.';
+    statusText.style.color = '#dc2626';
+  }
+
+  btnScan.disabled = false;
+  btnScan.textContent = '📸 Scan My Mood';
+  btnRetry.style.display = 'inline-block';
+});
+
+// ── Show result ───────────────────────────────────────────────
+function showResult(mood, confidence) {
+  const meta = MOOD_META[mood] || MOOD_META.unknown;
+
+  document.getElementById('result-icon').textContent = meta.icon;
+  document.getElementById('result-mood').textContent = mood.charAt(0).toUpperCase() + mood.slice(1);
+  document.getElementById('result-mood').style.color = meta.color;
+  document.getElementById('result-desc').textContent = meta.desc;
+
+  resultCard.style.display = 'block';
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Scan again ────────────────────────────────────────────────
+btnRetry.addEventListener('click', () => {
+  resultCard.style.display = 'none';
+  btnRetry.style.display = 'none';
+  document.getElementById('note-input').value = '';
+  statusText.textContent = 'Camera ready. Position your face and click Scan.';
+  statusText.style.color = '';
+});
+</script>
+{% endblock %}
