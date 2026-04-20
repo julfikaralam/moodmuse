@@ -48,6 +48,9 @@ login_manager.login_view = 'login'           # redirect here if not logged in
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
+ADMIN_EMAIL = 'adminpannel@gmail.com'
+ADMIN_PASSWORD = 'adminpannel1'
+
 
 def hash_password(password):
     """Hash passwords with Flask-Bcrypt when available, otherwise Werkzeug."""
@@ -61,6 +64,11 @@ def verify_password(hashed_password, password):
     if bcrypt:
         return bcrypt.check_password_hash(hashed_password, password)
     return check_password_hash(hashed_password, password)
+
+
+def is_admin_logged_in():
+    """Return True when the current session belongs to the demo admin."""
+    return session.get('is_admin_logged_in') is True
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -248,6 +256,14 @@ def build_upcoming_sessions(psychologists, reference_date):
         })
     return sessions
 
+
+def get_resources_by_category(category):
+    """Fetch resources for one category so each page stays focused."""
+    return (Resource.query
+            .filter_by(category=category)
+            .order_by(Resource.title.asc())
+            .all())
+
 # Haar cascade for face detection (built into OpenCV)
 _CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
 _face_cascade  = cv2.CascadeClassifier(_CASCADE_PATH)
@@ -386,6 +402,46 @@ def detect_mood_from_image(b64_string: str) -> dict:
     }
 
 
+def detect_mood_from_frames(images: list[str]) -> dict:
+    """
+    Improve accuracy by analysing a short burst of frames instead of a single image.
+    We keep only frames with a visible face, then combine moods using confidence.
+    """
+    valid_results = []
+
+    for image in images:
+        if not image:
+            continue
+
+        result = detect_mood_from_image(image)
+        if result['face_detected']:
+            valid_results.append(result)
+
+    if not valid_results:
+        return {
+            'mood': 'unknown',
+            'score': 0,
+            'confidence': 0,
+            'face_detected': False,
+        }
+
+    mood_totals = {}
+    for result in valid_results:
+        mood = result['mood']
+        mood_totals[mood] = mood_totals.get(mood, 0.0) + max(result['confidence'], 1)
+
+    best_mood = max(mood_totals, key=mood_totals.get)
+    best_results = [result for result in valid_results if result['mood'] == best_mood]
+    avg_confidence = int(round(sum(result['confidence'] for result in best_results) / len(best_results)))
+
+    return {
+        'mood': best_mood,
+        'score': MOOD_SCORES.get(best_mood, 3),
+        'confidence': _clamp(avg_confidence, 55, 96),
+        'face_detected': True,
+    }
+
+
 # ─────────────────────────────────────────────────────────────────
 # SEED DATA  (runs once on startup if tables are empty)
 # ─────────────────────────────────────────────────────────────────
@@ -455,7 +511,7 @@ def index():
     """Home page — redirects to dashboard if already logged in."""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return render_template('index.html')
+    return redirect(url_for('login'))
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -512,6 +568,9 @@ def signup():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if is_admin_logged_in():
+        return redirect(url_for('admin_dashboard'))
+
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
@@ -519,6 +578,12 @@ def login():
         email    = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         remember = request.form.get('remember') == 'on'
+
+        if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            session.clear()
+            session['is_admin_logged_in'] = True
+            flash('Welcome back, admin!', 'success')
+            return redirect(url_for('admin_dashboard'))
 
         user = User.query.filter_by(email=email).first()
 
@@ -530,15 +595,95 @@ def login():
         else:
             flash('Incorrect email or password.', 'danger')
 
-    return render_template('login.html')
+    return render_template('login.html', admin_email=ADMIN_EMAIL)
 
 
 @app.route('/logout')
-@login_required
 def logout():
-    logout_user()
+    was_admin = is_admin_logged_in()
+    was_user = current_user.is_authenticated
+
+    if was_user:
+        logout_user()
+
+    session.pop('is_admin_logged_in', None)
+
+    if not was_admin and not was_user:
+        return redirect(url_for('login'))
+
     flash('You have been logged out.', 'info')
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    """View and update the current user's profile information."""
+    if request.method == 'POST':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not first_name or not last_name or not email:
+            flash('First name, last name, and email are required.', 'danger')
+            return render_template(
+                'settings.html',
+                form_data={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'email': email,
+                },
+            )
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user and existing_user.id != current_user.id:
+            flash('That email is already being used by another account.', 'danger')
+            return render_template(
+                'settings.html',
+                form_data={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'email': email,
+                },
+            )
+
+        if new_password or confirm_password:
+            if new_password != confirm_password:
+                flash('New password and confirm password must match.', 'danger')
+                return render_template(
+                    'settings.html',
+                    form_data={
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'email': email,
+                    },
+                )
+
+            if len(new_password) < 6:
+                flash('New password must be at least 6 characters.', 'danger')
+                return render_template(
+                    'settings.html',
+                    form_data={
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'email': email,
+                    },
+                )
+
+            current_user.password = hash_password(new_password)
+
+        current_user.first_name = first_name
+        current_user.last_name = last_name
+        current_user.name = f"{first_name} {last_name}".strip()
+        current_user.email = email
+
+        db.session.commit()
+        flash('Your profile has been updated.', 'success')
+        return redirect(url_for('settings'))
+
+    return render_template('settings.html', form_data=None)
 
 
 @app.route('/send-reset-code', methods=['POST'])
@@ -815,11 +960,15 @@ def api_detect():
     """
     data  = request.get_json(silent=True) or {}
     image = data.get('image', '')
+    images = data.get('images', [])
 
-    if not image:
+    if not image and not images:
         return jsonify({'success': False, 'error': 'No image received'}), 400
 
-    result = detect_mood_from_image(image)
+    if images and isinstance(images, list):
+        result = detect_mood_from_frames(images)
+    else:
+        result = detect_mood_from_image(image)
 
     if not result['face_detected']:
         return jsonify({
@@ -871,23 +1020,46 @@ def delete_log(log_id):
     return redirect(url_for('history'))
 
 
+@app.route('/therapist')
+@login_required
+def therapist():
+    """Show only mental health professionals."""
+    psychologists = (Psychologist.query
+                     .filter_by(available=True)
+                     .order_by(Psychologist.name.asc())
+                     .all())
+    return render_template('therapist.html', psychologists=psychologists)
+
+
+@app.route('/exercise')
+@login_required
+def exercise():
+    """Show only exercises and activities."""
+    exercises = get_resources_by_category('exercise')
+    return render_template('exercise.html', exercises=exercises)
+
+
 @app.route('/resources')
 @login_required
 def resources():
-    """Psychologist directory + self-help resources."""
-    psychologists = Psychologist.query.filter_by(available=True).all()
-    all_resources = Resource.query.all()
+    """Show only article and guide resources."""
+    articles = get_resources_by_category('article')
+    return render_template('resources.html', articles=articles)
 
-    # Group resources by category
-    by_category = {}
-    for r in all_resources:
-        by_category.setdefault(r.category, []).append(r)
 
-    return render_template(
-        'resources.html',
-        psychologists=psychologists,
-        by_category=by_category,
-    )
+@app.route('/admin-login')
+def admin_login():
+    """Redirect legacy admin login links to the shared login page."""
+    return redirect(url_for('login'))
+
+
+@app.route('/admin-dashboard')
+def admin_dashboard():
+    """Frontend-only admin dashboard page for demo usage."""
+    if not is_admin_logged_in():
+        flash('Please log in with the admin account to access the admin dashboard.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('admin-dashboard.html')
 
 
 # ─────────────────────────────────────────────────────────────────

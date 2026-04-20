@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Exercises & Activities - MoodMuse{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="category-shell">
+    <!-- Back button to the main dashboard -->
+    <a class="back-link" href="{{ url_for('dashboard') }}">
+      <i class="bi bi-arrow-left"></i>
+      Back to Dashboard
+    </a>
+
+    <!-- Dedicated header for exercise content only -->
+    <section class="category-hero">
+      <div class="hero-kicker">
+        <i class="bi bi-activity"></i>
+        Daily Practice
+      </div>
+      <h1 class="page-title">Exercises &amp; Activities</h1>
+      <p class="page-subtitle mb-0">
+        Try simple activities like breathing, meditation, and movement to support your mood.
+      </p>
+    </section>
+
+    <!-- Exercise cards -->
+    <section class="category-grid">
+      {% for exercise in exercises %}
+      <article class="category-card">
+        <div class="category-card-icon">
+          <i class="bi bi-heart-pulse"></i>
+        </div>
+        <h3>{{ exercise.title }}</h3>
+        <p>{{ exercise.description }}</p>
+        {% if exercise.mood_tag %}
+        <span class="category-tag">Helpful for {{ exercise.mood_tag }} moods</span>
+        {% endif %}
+      </article>
+      {% else %}
+      <article class="category-card">
+        <h3>No exercises available yet</h3>
+        <p>Add some calming activities to the resource list when you're ready.</p>
+      </article>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

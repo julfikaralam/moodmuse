@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Admin Login - MoodMuse{% endblock %}
+
+{% block head %}
+<style>
+  .admin-auth-shell {
+    min-height: calc(100vh - 120px);
+    display: grid;
+    place-items: center;
+    padding: 2rem 0;
+  }
+
+  .admin-auth-card {
+    width: min(460px, 100%);
+    background: linear-gradient(180deg, #ffffff, #f9fcff);
+    border: 1px solid #dfe8f1;
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.1);
+    padding: 2rem;
+  }
+
+  .admin-auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .admin-auth-title {
+    color: var(--charcoal);
+    margin-bottom: 0.45rem;
+  }
+
+  .admin-auth-copy {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .admin-auth-form {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .admin-field {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .admin-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  .admin-input {
+    width: 100%;
+    border: 1px solid #dce6ef;
+    border-radius: 16px;
+    padding: 0.95rem 1rem;
+    font-size: 0.96rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .admin-input:focus {
+    outline: none;
+    border-color: #67b7ad;
+    box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.12);
+  }
+
+  .admin-error {
+    display: none;
+    border-radius: 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .admin-error.show {
+    display: block;
+  }
+
+  .admin-note {
+    margin-top: 1rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="admin-auth-shell">
+    <section class="admin-auth-card">
+      <div class="admin-auth-badge">
+        <i class="bi bi-shield-lock"></i>
+        Admin Access
+      </div>
+      <h1 class="admin-auth-title">Admin Login</h1>
+      <p class="admin-auth-copy">
+        Sign in with the demo admin account to view saved user profile and mood-tracking data.
+      </p>
+
+      <div id="adminLoginError" class="admin-error" aria-live="polite"></div>
+
+      <form id="adminLoginForm" class="admin-auth-form" novalidate>
+        <div class="admin-field">
+          <label class="admin-label" for="adminEmail">Email</label>
+          <input
+            id="adminEmail"
+            type="email"
+            class="admin-input"
+            placeholder="adminpannel@gmail.com"
+            required
+          />
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-label" for="adminPassword">Password</label>
+          <input
+            id="adminPassword"
+            type="password"
+            class="admin-input"
+            placeholder="Enter admin password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn btn-teal">Login</button>
+      </form>
+
+      <p class="admin-note">
+        Demo note: this admin login uses hardcoded credentials in the browser and localStorage only.
+      </p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const adminLoginForm = document.getElementById('adminLoginForm');
+  const adminLoginError = document.getElementById('adminLoginError');
+  const adminEmailInput = document.getElementById('adminEmail');
+  const adminPasswordInput = document.getElementById('adminPassword');
+
+  const ADMIN_EMAIL = 'adminpannel@gmail.com';
+  const ADMIN_PASSWORD = 'adminpannel1';
+  const ADMIN_SESSION_KEY = 'isAdminLoggedIn';
+
+  if (localStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+    window.location.href = '{{ url_for("admin_dashboard") }}';
+  }
+
+  adminLoginForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const email = adminEmailInput.value.trim().toLowerCase();
+    const password = adminPasswordInput.value;
+
+    // Login validation: compare the entered values with the demo admin credentials.
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      adminLoginError.classList.remove('show');
+      adminLoginError.textContent = '';
+      window.location.href = '{{ url_for("admin_dashboard") }}';
+      return;
+    }
+
+    adminLoginError.textContent = 'Incorrect admin email or password.';
+    adminLoginError.classList.add('show');
+  });
+</script>
+{% endblock %}

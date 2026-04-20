@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+{% block title %}Personal Information - MoodMuse{% endblock %}
+
+{% block head %}
+<style>
+  .profile-shell {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .profile-hero {
+    background: linear-gradient(135deg, #ffffff, #f2fbf8);
+    border: 1px solid rgba(42, 157, 143, 0.14);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 1.75rem;
+  }
+
+  .profile-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.9rem;
+  }
+
+  .profile-card {
+    padding: 1.5rem;
+  }
+
+  .profile-section-title {
+    font-size: 1.2rem;
+    color: var(--charcoal);
+    margin-bottom: 0.35rem;
+  }
+
+  .profile-section-copy {
+    color: var(--muted);
+    font-size: 0.94rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .profile-form {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .profile-field {
+    display: grid;
+    gap: 0.42rem;
+  }
+
+  .profile-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+
+  .profile-input,
+  .profile-select,
+  .profile-textarea {
+    width: 100%;
+    border: 1px solid #dce6ef;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: #ffffff;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+
+  .profile-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  .profile-input:focus,
+  .profile-select:focus,
+  .profile-textarea:focus {
+    outline: none;
+    border-color: #67b7ad;
+    box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.12);
+  }
+
+  .profile-input[disabled],
+  .profile-select[disabled],
+  .profile-textarea[disabled] {
+    background: #f7fafc;
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .profile-help {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .profile-error {
+    display: none;
+    color: #dc2626;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .profile-error.show {
+    display: block;
+  }
+
+  .profile-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+
+  .profile-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.8rem 0.95rem;
+    border-radius: 16px;
+    border: 1px solid #dce6ef;
+    background: #ffffff;
+    color: var(--text);
+  }
+
+  .profile-radio input {
+    accent-color: var(--teal);
+  }
+
+  .profile-upload-shell {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-upload-preview {
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, #1d69ff, #0c63e4);
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: 1.7rem;
+    font-weight: 700;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .profile-upload-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-status {
+    display: none;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .profile-status.show {
+    display: block;
+  }
+
+  .profile-status.success {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+
+  .profile-status.error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+
+  .profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.85rem;
+    margin-top: 0.4rem;
+  }
+
+  @media (max-width: 768px) {
+    .profile-card,
+    .profile-hero {
+      padding: 1.2rem;
+    }
+
+    .profile-actions {
+      flex-direction: column;
+    }
+
+    .profile-actions .btn {
+      width: 100%;
+    }
+
+    .profile-upload-shell {
+      align-items: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="profile-shell">
+    <section class="profile-hero">
+      <div class="profile-kicker">
+        <i class="bi bi-person-vcard"></i>
+        Profile
+      </div>
+      <h1 class="page-title">Personal Information</h1>
+      <p class="page-subtitle mb-0">
+        Add and update your basic details in one simple form.
+      </p>
+    </section>
+
+    <section class="mm-card profile-card">
+      <h2 class="profile-section-title">Personal Information</h2>
+      <p class="profile-section-copy">
+        Fill in your details below. If saved data already exists, the form will auto-fill on page load.
+      </p>
+
+      <div id="profileStatus" class="profile-status" aria-live="polite"></div>
+
+      <!-- Single-column personal information form -->
+      <form id="userProfileForm" class="profile-form" novalidate>
+        <div class="profile-field">
+          <label class="profile-label" for="fullName">Full Name</label>
+          <input
+            id="fullName"
+            name="fullName"
+            type="text"
+            class="profile-input"
+            placeholder="Example: Julfkar Alam"
+            value="{{ current_user.name }}"
+            required
+          />
+          <div class="profile-error" data-error-for="fullName"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="phoneNumber">Phone Number</label>
+          <input
+            id="phoneNumber"
+            name="phoneNumber"
+            type="tel"
+            class="profile-input"
+            placeholder="Example: 01712345678"
+            inputmode="numeric"
+            required
+          />
+          <div class="profile-help">Use only numbers, between 10 and 15 digits.</div>
+          <div class="profile-error" data-error-for="phoneNumber"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            class="profile-input"
+            placeholder="Example: name@example.com"
+            value="{{ current_user.email }}"
+            required
+          />
+          <div class="profile-error" data-error-for="email"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="nationality">Nationality</label>
+          <select id="nationality" name="nationality" class="profile-select" required>
+            <option value="">Select nationality</option>
+            <option value="Bangladeshi">Bangladeshi</option>
+            <option value="Indian">Indian</option>
+            <option value="Pakistani">Pakistani</option>
+            <option value="Nepali">Nepali</option>
+            <option value="Sri Lankan">Sri Lankan</option>
+            <option value="Other">Other</option>
+          </select>
+          <div class="profile-error" data-error-for="nationality"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="dateOfBirth">Date of Birth</label>
+          <input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            class="profile-input"
+            required
+          />
+          <div class="profile-error" data-error-for="dateOfBirth"></div>
+        </div>
+
+        <div class="profile-field">
+          <span class="profile-label">Gender</span>
+          <div class="profile-radio-group">
+            <label class="profile-radio">
+              <input type="radio" name="gender" value="Male" />
+              <span>Male</span>
+            </label>
+            <label class="profile-radio">
+              <input type="radio" name="gender" value="Female" />
+              <span>Female</span>
+            </label>
+            <label class="profile-radio">
+              <input type="radio" name="gender" value="Other" />
+              <span>Other</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="address">Address</label>
+          <textarea
+            id="address"
+            name="address"
+            class="profile-textarea"
+            placeholder="Example: House 12, Road 5, Dhanmondi, Dhaka"
+            required
+          ></textarea>
+          <div class="profile-error" data-error-for="address"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="occupation">Occupation</label>
+          <input
+            id="occupation"
+            name="occupation"
+            type="text"
+            class="profile-input"
+            placeholder="Example: Student, Designer, Engineer"
+            required
+          />
+          <div class="profile-error" data-error-for="occupation"></div>
+        </div>
+
+        <div class="profile-field">
+          <label class="profile-label" for="profilePicture">Profile Picture (Optional)</label>
+          <div class="profile-upload-shell">
+            <div id="profilePicturePreview" class="profile-upload-preview">
+              {{ (current_user.name or 'M')[:1] | upper }}
+            </div>
+            <div style="flex:1;min-width:220px;">
+              <input
+                id="profilePicture"
+                name="profilePicture"
+                type="file"
+                class="profile-input"
+                accept="image/*"
+              />
+              <div class="profile-help">You can upload a small profile image if you want.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <button type="button" id="editProfileBtn" class="btn btn-outline-teal">Edit Profile</button>
+          <button type="submit" id="saveProfileBtn" class="btn btn-teal">Save Profile</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const userProfileForm = document.getElementById('userProfileForm');
+  const editProfileBtn = document.getElementById('editProfileBtn');
+  const saveProfileBtn = document.getElementById('saveProfileBtn');
+  const profileStatus = document.getElementById('profileStatus');
+  const profilePictureInput = document.getElementById('profilePicture');
+  const profilePicturePreview = document.getElementById('profilePicturePreview');
+  const profileInputs = userProfileForm.querySelectorAll('input, select, textarea');
+  const userProfileStorageKey = 'userProfile';
+
+  function showStatus(message, type) {
+    profileStatus.textContent = message;
+    profileStatus.className = `profile-status show ${type}`;
+  }
+
+  function clearStatus() {
+    profileStatus.className = 'profile-status';
+    profileStatus.textContent = '';
+  }
+
+  function setFormEditable(isEditable) {
+    // Input handling: toggle editable mode so users can review first, then click Edit Profile.
+    profileInputs.forEach((field) => {
+      if (field.id === 'profilePicture') {
+        field.disabled = !isEditable;
+        return;
+      }
+
+      field.disabled = !isEditable;
+    });
+
+    saveProfileBtn.disabled = !isEditable;
+    editProfileBtn.disabled = isEditable;
+  }
+
+  function setFieldError(fieldName, message) {
+    const errorElement = userProfileForm.querySelector(`[data-error-for="${fieldName}"]`);
+
+    if (!errorElement) {
+      return;
+    }
+
+    errorElement.textContent = message;
+    errorElement.classList.toggle('show', Boolean(message));
+  }
+
+  function clearAllErrors() {
+    userProfileForm.querySelectorAll('.profile-error').forEach((errorElement) => {
+      errorElement.textContent = '';
+      errorElement.classList.remove('show');
+    });
+  }
+
+  function getProfileDataFromForm() {
+    const selectedGender = userProfileForm.querySelector('input[name="gender"]:checked');
+
+    return {
+      fullName: document.getElementById('fullName').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      nationality: document.getElementById('nationality').value,
+      dateOfBirth: document.getElementById('dateOfBirth').value,
+      gender: selectedGender ? selectedGender.value : '',
+      address: document.getElementById('address').value.trim(),
+      occupation: document.getElementById('occupation').value.trim(),
+      profilePicture: profilePicturePreview.dataset.image || '',
+    };
+  }
+
+  function loadProfileIntoForm(profile) {
+    document.getElementById('fullName').value = profile.fullName || '{{ current_user.name }}';
+    document.getElementById('phoneNumber').value = profile.phoneNumber || '';
+    document.getElementById('email').value = profile.email || '{{ current_user.email }}';
+    document.getElementById('nationality').value = profile.nationality || '';
+    document.getElementById('dateOfBirth').value = profile.dateOfBirth || '';
+    document.getElementById('address').value = profile.address || '';
+    document.getElementById('occupation').value = profile.occupation || '';
+
+    userProfileForm.querySelectorAll('input[name="gender"]').forEach((radioInput) => {
+      radioInput.checked = radioInput.value === profile.gender;
+    });
+
+    if (profile.profilePicture) {
+      profilePicturePreview.innerHTML = `<img src="${profile.profilePicture}" alt="Profile picture preview">`;
+      profilePicturePreview.dataset.image = profile.profilePicture;
+    }
+  }
+
+  function loadSavedProfile() {
+    // Saving/loading data: auto-fill the form when a saved profile exists in localStorage.
+    const savedProfile = localStorage.getItem(userProfileStorageKey);
+
+    if (!savedProfile) {
+      setFormEditable(true);
+      return;
+    }
+
+    try {
+      const parsedProfile = JSON.parse(savedProfile);
+      loadProfileIntoForm(parsedProfile);
+      setFormEditable(false);
+      showStatus('Saved profile loaded. Click "Edit Profile" to make changes.', 'success');
+    } catch (error) {
+      setFormEditable(true);
+      showStatus('Saved profile data could not be loaded. You can enter it again.', 'error');
+    }
+  }
+
+  function validateProfileForm(profileData) {
+    // Form validation: check required fields, phone number, email, and date of birth.
+    clearAllErrors();
+    let isValid = true;
+
+    if (!profileData.fullName) {
+      setFieldError('fullName', 'Please enter your full name.');
+      isValid = false;
+    }
+
+    if (!profileData.phoneNumber) {
+      setFieldError('phoneNumber', 'Please enter your phone number.');
+      isValid = false;
+    } else if (!/^\d{10,15}$/.test(profileData.phoneNumber)) {
+      setFieldError('phoneNumber', 'Phone number must contain 10 to 15 digits only.');
+      isValid = false;
+    }
+
+    if (!profileData.email) {
+      setFieldError('email', 'Please enter your email address.');
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
+      setFieldError('email', 'Please enter a valid email address.');
+      isValid = false;
+    }
+
+    if (!profileData.nationality) {
+      setFieldError('nationality', 'Please select your nationality.');
+      isValid = false;
+    }
+
+    if (!profileData.dateOfBirth) {
+      setFieldError('dateOfBirth', 'Please select your date of birth.');
+      isValid = false;
+    } else {
+      const today = new Date();
+      const selectedDate = new Date(profileData.dateOfBirth);
+
+      if (selectedDate > today) {
+        setFieldError('dateOfBirth', 'Date of birth cannot be in the future.');
+        isValid = false;
+      }
+    }
+
+    if (!profileData.address) {
+      setFieldError('address', 'Please enter your address.');
+      isValid = false;
+    }
+
+    if (!profileData.occupation) {
+      setFieldError('occupation', 'Please enter your occupation.');
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  profilePictureInput.addEventListener('change', (event) => {
+    const selectedFile = event.target.files[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      profilePicturePreview.innerHTML = `<img src="${reader.result}" alt="Profile picture preview">`;
+      profilePicturePreview.dataset.image = reader.result;
+    };
+    reader.readAsDataURL(selectedFile);
+  });
+
+  userProfileForm.addEventListener('input', () => {
+    clearStatus();
+  });
+
+  editProfileBtn.addEventListener('click', () => {
+    clearStatus();
+    setFormEditable(true);
+  });
+
+  userProfileForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const profileData = getProfileDataFromForm();
+
+    if (!validateProfileForm(profileData)) {
+      showStatus('Please fix the highlighted fields and try again.', 'error');
+      return;
+    }
+
+    // Saving/loading data: store the whole profile as one JSON object in localStorage.
+    localStorage.setItem(userProfileStorageKey, JSON.stringify(profileData));
+    setFormEditable(false);
+    showStatus('Your profile has been saved successfully.', 'success');
+  });
+
+  loadSavedProfile();
+</script>
+{% endblock %}

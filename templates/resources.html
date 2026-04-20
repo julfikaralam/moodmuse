@@ -1,99 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Self-Help Resources — MoodMuse{% endblock %}
+{% block title %}Articles & Guides - MoodMuse{% endblock %}
 
 {% block content %}
 <div class="page-wrapper">
-  <h2 class="page-title">Self-Help Resources</h2>
-  <p class="page-subtitle">Explore self-care tools, exercises, and reading material below.</p>
+  <div class="category-shell">
+    <!-- Back button to the dashboard -->
+    <a class="back-link" href="{{ url_for('dashboard') }}">
+      <i class="bi bi-arrow-left"></i>
+      Back to Dashboard
+    </a>
 
-  <!-- Therapist section -->
-  <div class="mm-card mb-4" style="border-left:4px solid var(--teal)">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-      <div>
-        <h5 class="fw-bold mb-1" style="color:var(--charcoal)">
-          <i class="bi bi-person-heart me-1" style="color:var(--teal)"></i>
-          Mental Health Professionals
-        </h5>
-        <p class="mb-0 text-muted" style="font-size:0.9rem">Support from licensed professionals when you need extra help.</p>
+    <!-- Dedicated header for article content only -->
+    <section class="category-hero">
+      <div class="hero-kicker">
+        <i class="bi bi-journal-richtext"></i>
+        Learning Library
       </div>
-      <span class="badge" style="background:var(--teal-light);color:var(--teal);font-weight:600">
-        Support
-      </span>
-    </div>
+      <h1 class="page-title">Articles &amp; Guides</h1>
+      <p class="page-subtitle mb-0">
+        Read practical tips and guides to build healthier routines and emotional awareness.
+      </p>
+    </section>
 
-    <div class="row g-3">
-      {% for p in psychologists %}
-      <div class="col-md-6 col-lg-4">
-        <div class="mm-card h-100">
-          <div class="d-flex align-items-center gap-3 mb-2">
-            <div style="width:44px;height:44px;border-radius:50%;background:var(--teal-light);
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:1.2rem;flex-shrink:0">
-              🩺
-            </div>
-            <div>
-              <strong style="font-size:0.95rem">{{ p.name }}</strong><br/>
-              <small class="text-muted">{{ p.specialty }}</small>
-            </div>
-          </div>
-          <hr class="my-2"/>
-          <div style="font-size:0.85rem;color:var(--muted)">
-            <div><i class="bi bi-geo-alt me-1"></i>{{ p.location }}</div>
-            <div class="mt-1"><i class="bi bi-telephone me-1"></i>{{ p.contact }}</div>
-          </div>
-          <span class="badge mt-2"
-                style="background:var(--teal-light);color:var(--teal);font-weight:500">
-            ✓ Available
-          </span>
+    <!-- Resource cards -->
+    <section class="category-grid">
+      {% for article in articles %}
+      <article class="category-card">
+        <div class="category-card-icon">
+          <i class="bi bi-book"></i>
         </div>
-      </div>
+        <h3>{{ article.title }}</h3>
+        <p>{{ article.description }}</p>
+        {% if article.url %}
+        <a class="btn btn-outline-teal btn-sm" href="{{ article.url }}" target="_blank" rel="noopener">
+          Open Article
+        </a>
+        {% endif %}
+        {% if article.mood_tag %}
+        <div>
+          <span class="category-tag">Good for {{ article.mood_tag }} moods</span>
+        </div>
+        {% endif %}
+      </article>
+      {% else %}
+      <article class="category-card">
+        <h3>No articles available yet</h3>
+        <p>Add a few guides to this section when new reading material is ready.</p>
+      </article>
       {% endfor %}
-    </div>
+    </section>
   </div>
-
-  <!-- Self-help resources -->
-  <h5 class="fw-bold mb-3" style="color:var(--charcoal)">
-    <i class="bi bi-book-heart me-1" style="color:var(--teal)"></i>
-    Self-Help Resources
-  </h5>
-
-  {% set cat_icons = {
-      'exercise': '🏃',
-      'article':  '📖',
-      'hotline':  '📞'
-  } %}
-  {% set cat_labels = {
-      'exercise': 'Exercises & Activities',
-      'article':  'Articles & Guides',
-  } %}
-
-  {% for cat, items in by_category.items() %}
-  {% if cat != 'hotline' %}
-  <h6 class="text-muted mt-4 mb-2" style="text-transform:uppercase;letter-spacing:.07em;font-size:0.78rem">
-    {{ cat_icons.get(cat, '📌') }} {{ cat_labels.get(cat, cat.title()) }}
-  </h6>
-  <div class="row g-3 mb-2">
-    {% for r in items %}
-    <div class="col-md-6">
-      <div class="mm-card h-100" style="border-left:4px solid var(--teal)">
-        <strong style="font-size:0.95rem">{{ r.title }}</strong>
-        <p class="text-muted mt-2 mb-2" style="font-size:0.87rem">{{ r.description }}</p>
-        {% if r.url %}
-          <a href="{{ r.url }}" target="_blank" rel="noopener"
-             class="btn btn-outline-teal btn-sm px-3">
-            Visit <i class="bi bi-arrow-up-right-square ms-1"></i>
-          </a>
-        {% endif %}
-        {% if r.mood_tag %}
-          <span class="mood-badge mood-{{ r.mood_tag }} ms-2" style="font-size:0.75rem">
-            for {{ r.mood_tag }} mood
-          </span>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endfor %}
 </div>
 {% endblock %}

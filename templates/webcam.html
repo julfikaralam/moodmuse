@@ -38,6 +38,7 @@
 
   #result-card { display: none; }
   .mood-big-icon { font-size: 3.5rem; }
+  .camera-help-actions { display: none; }
 </style>
 {% endblock %}
 
@@ -58,6 +59,17 @@
     <p id="status-text" class="text-center text-muted mt-3 mb-3" style="font-size:0.9rem">
       Starting camera…
     </p>
+
+    <div id="cameraHelpActions" class="camera-help-actions d-flex gap-2 justify-content-center flex-wrap mb-3">
+      <button id="btn-camera-retry" type="button" class="btn btn-outline-teal">
+        Try Camera Again
+      </button>
+      {% if request.args.get('overlay') == '1' %}
+      <a href="{{ url_for('webcam') }}" target="_blank" rel="noopener" class="btn btn-teal">
+        Open Full Page
+      </a>
+      {% endif %}
+    </div>
 
     <!-- Note input -->
     <div class="mb-3">
@@ -103,6 +115,41 @@ const btnRetry    = document.getElementById('btn-retry');
 const statusText  = document.getElementById('status-text');
 const scanOverlay = document.getElementById('scan-overlay');
 const resultCard  = document.getElementById('result-card');
+const cameraHelpActions = document.getElementById('cameraHelpActions');
+const btnCameraRetry = document.getElementById('btn-camera-retry');
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function captureFrame() {
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+
+  // Mirror the canvas to match the mirrored video display
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
+async function captureFrameBurst(frameCount = 5, delayMs = 120) {
+  // Detection loop helper: grab a few nearby frames and let the backend aggregate them.
+  const capturedFrames = [];
+
+  for (let index = 0; index < frameCount; index += 1) {
+    capturedFrames.push(captureFrame());
+
+    if (index < frameCount - 1) {
+      await wait(delayMs);
+    }
+  }
+
+  return capturedFrames;
+}
 
 // ── Mood display data ────────────────────────────────────────
 const MOOD_META = {
@@ -116,6 +163,25 @@ const MOOD_META = {
 
 // ── Start webcam ─────────────────────────────────────────────
 async function startCamera() {
+  cameraHelpActions.style.display = 'none';
+  statusText.style.color = '';
+  statusText.textContent = 'Starting camera…';
+
+  // Camera access works only in secure contexts such as localhost or HTTPS.
+  if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    statusText.textContent = 'Camera needs a secure connection. Open MoodMuse with HTTPS or localhost.';
+    statusText.style.color = '#dc2626';
+    cameraHelpActions.style.display = 'flex';
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    statusText.textContent = 'This browser does not support camera access.';
+    statusText.style.color = '#dc2626';
+    cameraHelpActions.style.display = 'flex';
+    return;
+  }
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -127,40 +193,44 @@ async function startCamera() {
       btnScan.disabled = false;
     };
   } catch (err) {
-    statusText.textContent = 'Camera access denied. Please allow camera permissions and refresh.';
+    if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+      statusText.textContent = 'Camera access is blocked. Please allow camera permission for this site in your browser settings.';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      statusText.textContent = 'No camera was found on this device.';
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      statusText.textContent = 'Your camera is busy in another app. Close the other app and try again.';
+    } else {
+      statusText.textContent = 'Camera could not start. Please check camera permission and try again.';
+    }
+
     statusText.style.color = '#dc2626';
+    cameraHelpActions.style.display = 'flex';
   }
 }
 
 startCamera();
+btnCameraRetry.addEventListener('click', startCamera);
 
 // ── Capture and send to backend ──────────────────────────────
 btnScan.addEventListener('click', async () => {
-  // Draw current video frame to canvas
-  canvas.width  = video.videoWidth  || 640;
-  canvas.height = video.videoHeight || 480;
-  const ctx = canvas.getContext('2d');
-  // Mirror the canvas to match the mirrored video display
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-  ctx.restore();
-
-  const imageData = canvas.toDataURL('image/jpeg', 0.85);
-
   // Show scanning state
   btnScan.disabled = true;
   btnScan.textContent = 'Scanning…';
   scanOverlay.style.display = 'flex';
-  statusText.textContent = 'Analysing your expression…';
+  statusText.textContent = 'Analysing a few frames for a more accurate mood…';
   resultCard.style.display = 'none';
 
   try {
+    const capturedFrames = await captureFrameBurst();
     const note = document.getElementById('note-input').value.trim();
     const response = await fetch('/api/detect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageData, note: note }),
+      body: JSON.stringify({
+        image: capturedFrames[0],
+        images: capturedFrames,
+        note: note,
+      }),
     });
     const data = await response.json();
 

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - MoodMuse{% endblock %}
+
+{% block head %}
+<style>
+  .admin-shell {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .admin-hero {
+    background: linear-gradient(135deg, #ffffff, #f4fbff);
+    border: 1px solid #dfe8f1;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 1.6rem;
+  }
+
+  .admin-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-radius: 999px;
+    padding: 0.42rem 0.84rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 0.9rem;
+  }
+
+  .admin-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px auto;
+    gap: 0.9rem;
+    align-items: center;
+  }
+
+  .admin-input,
+  .admin-select {
+    width: 100%;
+    border: 1px solid #dce6ef;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    font-size: 0.94rem;
+    background: #ffffff;
+  }
+
+  .admin-input:focus,
+  .admin-select:focus {
+    outline: none;
+    border-color: #67b7ad;
+    box-shadow: 0 0 0 4px rgba(42, 157, 143, 0.12);
+  }
+
+  .admin-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .admin-stat-card {
+    background: #ffffff;
+    border: 1px solid #e3ebf4;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    padding: 1.2rem;
+  }
+
+  .admin-stat-label {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .admin-stat-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    line-height: 1.1;
+  }
+
+  .admin-data-card {
+    background: #ffffff;
+    border: 1px solid #e3ebf4;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+  }
+
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 920px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 0.95rem 0.8rem;
+    border-bottom: 1px solid #ebf1f7;
+    text-align: left;
+    vertical-align: top;
+    font-size: 0.92rem;
+  }
+
+  .admin-table th {
+    color: #5f6b81;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+
+  .admin-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #edf5ff;
+    color: #245db0;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .admin-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 2rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .admin-note {
+    border-radius: 18px;
+    background: #fff8e6;
+    border: 1px solid #f8d98c;
+    color: #8a5a00;
+    padding: 1rem 1.1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 992px) {
+    .admin-toolbar,
+    .admin-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="admin-shell">
+    <section class="admin-hero">
+      <div class="admin-hero-badge">
+        <i class="bi bi-shield-check"></i>
+        Admin Dashboard
+      </div>
+      <h1 class="page-title">MoodMuse Admin Panel</h1>
+      <p class="page-subtitle mb-0">
+        Review locally saved user profile information and mood-tracking data from this browser.
+      </p>
+    </section>
+
+    <section class="admin-toolbar">
+      <input id="adminSearchInput" class="admin-input" type="text" placeholder="Search by name or email" />
+      <select id="adminScoreFilter" class="admin-select">
+        <option value="">Filter by mood score</option>
+        <option value="4">4 and above</option>
+        <option value="3">3 and above</option>
+        <option value="2">2 and above</option>
+      </select>
+      <button id="adminLogoutBtn" type="button" class="btn btn-outline-teal">Logout</button>
+    </section>
+
+    <section class="admin-stats">
+      <article class="admin-stat-card">
+        <div class="admin-stat-label">Saved Profiles</div>
+        <div id="statProfiles" class="admin-stat-value">0</div>
+      </article>
+      <article class="admin-stat-card">
+        <div class="admin-stat-label">Daily Check-ins</div>
+        <div id="statCheckins" class="admin-stat-value">0</div>
+      </article>
+      <article class="admin-stat-card">
+        <div class="admin-stat-label">Weekly Scores</div>
+        <div id="statWeeklyScores" class="admin-stat-value">0</div>
+      </article>
+      <article class="admin-stat-card">
+        <div class="admin-stat-label">Latest Score</div>
+        <div id="statLatestScore" class="admin-stat-value">-</div>
+      </article>
+    </section>
+
+    <section class="admin-data-card">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Nationality</th>
+              <th>Occupation</th>
+              <th>Daily Score</th>
+              <th>Last Check-in</th>
+              <th>Weekly Scores</th>
+            </tr>
+          </thead>
+          <tbody id="adminUserTableBody"></tbody>
+        </table>
+      </div>
+      <div id="adminEmptyState" class="admin-empty" style="display:none;">
+        No user data was found in localStorage for this browser yet.
+      </div>
+    </section>
+
+    <section class="admin-note">
+      Important demo note: this admin panel is not secure for production.
+      The credentials are hardcoded in browser JavaScript for demo use only, and real applications
+      must use backend authentication, protected sessions, and database-backed access control.
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const USER_PROFILE_KEY = 'userProfile';
+  const adminSearchInput = document.getElementById('adminSearchInput');
+  const adminScoreFilter = document.getElementById('adminScoreFilter');
+  const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+  const adminUserTableBody = document.getElementById('adminUserTableBody');
+  const adminEmptyState = document.getElementById('adminEmptyState');
+  const statProfiles = document.getElementById('statProfiles');
+  const statCheckins = document.getElementById('statCheckins');
+  const statWeeklyScores = document.getElementById('statWeeklyScores');
+  const statLatestScore = document.getElementById('statLatestScore');
+
+  function getStoredJSON(key, fallbackValue) {
+    const value = localStorage.getItem(key);
+
+    if (!value) {
+      return fallbackValue;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return fallbackValue;
+    }
+  }
+
+  function collectAdminData() {
+    // Data fetching: read saved profile/check-in data from localStorage and shape it for display.
+    const profile = getStoredJSON(USER_PROFILE_KEY, null);
+    const rows = [];
+
+    const profileRow = {
+      name: profile?.fullName || 'Unknown user',
+      email: profile?.email || '-',
+      phone: profile?.phoneNumber || '-',
+      nationality: profile?.nationality || '-',
+      occupation: profile?.occupation || '-',
+      dailyScore: '-',
+      lastCheckIn: '-',
+      weeklyScores: [],
+    };
+
+    Object.keys(localStorage).forEach((key) => {
+      if (!key.startsWith('moodmuse-checkin-') || !key.endsWith('-dailyAnswers')) {
+        return;
+      }
+
+      const prefix = key.replace('-dailyAnswers', '');
+      const dailyAnswers = getStoredJSON(key, null);
+      const weeklyScores = getStoredJSON(`${prefix}-weeklyScores`, []);
+      const storedDailyScore = localStorage.getItem(`${prefix}-dailyScore`);
+
+      rows.push({
+        ...profileRow,
+        dailyScore: storedDailyScore || dailyAnswers?.averageScore || '-',
+        lastCheckIn: dailyAnswers?.date || '-',
+        weeklyScores,
+      });
+    });
+
+    if (rows.length === 0 && profile) {
+      rows.push(profileRow);
+    }
+
+    return rows;
+  }
+
+  function renderAdminStats(rows) {
+    const totalProfiles = rows.length;
+    const totalCheckins = rows.filter((row) => row.lastCheckIn !== '-').length;
+    const totalWeeklyScores = rows.reduce((sum, row) => sum + row.weeklyScores.length, 0);
+    const latestScoreRow = rows.find((row) => row.dailyScore !== '-');
+
+    statProfiles.textContent = totalProfiles;
+    statCheckins.textContent = totalCheckins;
+    statWeeklyScores.textContent = totalWeeklyScores;
+    statLatestScore.textContent = latestScoreRow ? latestScoreRow.dailyScore : '-';
+  }
+
+  function renderAdminTable(rows) {
+    adminUserTableBody.innerHTML = '';
+
+    if (rows.length === 0) {
+      adminEmptyState.style.display = 'block';
+      return;
+    }
+
+    adminEmptyState.style.display = 'none';
+
+    rows.forEach((row) => {
+      const weeklyScoreMarkup = row.weeklyScores.length
+        ? row.weeklyScores.map((item) => `<span class="admin-pill">${item.date}: ${item.score}</span>`).join(' ')
+        : '<span class="admin-pill">No weekly data</span>';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${row.name}</strong></td>
+        <td>${row.email}</td>
+        <td>${row.phone}</td>
+        <td>${row.nationality}</td>
+        <td>${row.occupation}</td>
+        <td>${row.dailyScore}</td>
+        <td>${row.lastCheckIn}</td>
+        <td>${weeklyScoreMarkup}</td>
+      `;
+      adminUserTableBody.appendChild(tr);
+    });
+  }
+
+  function applyAdminFilters() {
+    const searchText = adminSearchInput.value.trim().toLowerCase();
+    const scoreFilter = Number(adminScoreFilter.value || 0);
+    const rows = collectAdminData().filter((row) => {
+      const matchesSearch = !searchText
+        || row.name.toLowerCase().includes(searchText)
+        || row.email.toLowerCase().includes(searchText);
+
+      const numericScore = Number(row.dailyScore || 0);
+      const matchesScore = !scoreFilter || numericScore >= scoreFilter;
+
+      return matchesSearch && matchesScore;
+    });
+
+    renderAdminStats(rows);
+    renderAdminTable(rows);
+  }
+
+  adminSearchInput.addEventListener('input', applyAdminFilters);
+  adminScoreFilter.addEventListener('change', applyAdminFilters);
+
+  adminLogoutBtn.addEventListener('click', () => {
+    window.location.href = '{{ url_for("logout") }}';
+  });
+
+  applyAdminFilters();
+</script>
+{% endblock %}

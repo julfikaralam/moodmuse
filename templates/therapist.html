@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Mental Health Professionals - MoodMuse{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+  <div class="category-shell">
+    <!-- Simple back button so users can return to the dashboard quickly -->
+    <a class="back-link" href="{{ url_for('dashboard') }}">
+      <i class="bi bi-arrow-left"></i>
+      Back to Dashboard
+    </a>
+
+    <!-- Page header: this page only shows therapist content -->
+    <section class="category-hero">
+      <div class="hero-kicker">
+        <i class="bi bi-person-heart"></i>
+        Support Directory
+      </div>
+      <h1 class="page-title">Mental Health Professionals</h1>
+      <p class="page-subtitle mb-0">
+        Browse available therapists and mental health professionals for extra support.
+      </p>
+    </section>
+
+    <!-- Therapist cards -->
+    <section class="category-grid">
+      {% for therapist in psychologists %}
+      <article class="category-card">
+        <div class="category-card-icon">
+          <i class="bi bi-person-badge"></i>
+        </div>
+        <h3>{{ therapist.name }}</h3>
+        <p>{{ therapist.specialty or "General mental health support" }}</p>
+        <div class="category-meta">
+          <div><i class="bi bi-geo-alt me-2"></i>{{ therapist.location or "Online / Remote" }}</div>
+          <div><i class="bi bi-telephone me-2"></i>{{ therapist.contact or "Contact not available" }}</div>
+        </div>
+        <span class="category-tag">Available</span>
+      </article>
+      {% else %}
+      <article class="category-card">
+        <h3>No therapists available right now</h3>
+        <p>Please check back later for updated support options.</p>
+      </article>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}
